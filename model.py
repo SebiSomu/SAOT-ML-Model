@@ -85,9 +85,9 @@ def print_section(title: str):
     print("=" * width)
 
 
-def print_metrics(model_name: str, y_true, y_pred, y_proba=None):
+def print_metrics(model_name: str, y_true, y_pred, y_probe=None):
     acc = accuracy_score(y_true, y_pred)
-    auc = roc_auc_score(y_true, y_proba[:, 1]) if y_proba is not None else None
+    auc = roc_auc_score(y_true, y_probe[:, 1]) if y_probe is not None else None
 
     print(f"\n  > Model: {model_name}")
     print(f"    Accuracy : {acc:.4f} ({acc*100:.2f}%)")
@@ -132,8 +132,8 @@ def run_realtime_tests(detector: OffsideDetector):
         sample = generate_realtime_sample(ps, tm, df)
         X_test = pd.DataFrame(sample)[FEATURES]
         pred = int(detector.predict(X_test)[0])
-        proba = detector.predict_probe(X_test)[0]
-        conf = proba[pred] * 100
+        probe = detector.predict_probe(X_test)[0]
+        conf = probe[pred] * 100
         label = "[OFFSIDE]" if pred == 1 else "[Onside] "
         print(f"  {i:>3}.  {desc:<48}  {label}  {conf:>5.1f}%")
 
@@ -180,10 +180,10 @@ def main():
 
     for name, detector in trained.items():
         y_pred = detector.predict(X_test)
-        y_proba = detector.predict_probe(X_test)
-        print_metrics(name.strip(), y_test, y_pred, y_proba)
+        y_probe = detector.predict_probe(X_test)
+        print_metrics(name.strip(), y_test, y_pred, y_probe)
 
-        auc = roc_auc_score(y_test, y_proba[:, 1])
+        auc = roc_auc_score(y_test, y_probe[:, 1])
         if auc > best_auc:
             best_auc = auc
             best_model = (name.strip(), detector)

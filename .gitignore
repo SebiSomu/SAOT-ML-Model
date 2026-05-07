@@ -131,6 +131,11 @@ cython_debug/
 # Model files
 *.joblib
 
+# Python cache
+*.pyo
+*.pyd
+*.pyc
+
 # IDE
 .idea/
 .vscode/
