@@ -1,15 +1,6 @@
 """
-SAOT - Semi-Automated Offside Technology
-Module: ML Model for Offside Detection
-
-Architecture:
-  - Scikit-learn: Logistic Regression + Random Forest (comparison)
-  - Pipeline with StandardScaler for normalization
-  - Modular: common interface for future upgrades (OpenCV, deep learning)
-
 Future Scalability:
   - Replace generate_realtime_sample() with OpenCV frame reading
-  - Add features: player speeds, angles, body keypoints
   - Upgrade model: sklearn -> TensorFlow/ONNX without changing interface
 """
 
@@ -31,18 +22,11 @@ import os
 
 from data_generator import generate_offside_sample, generate_realtime_sample
 
-# ------------------------------------------------------------
-# Config
-# ------------------------------------------------------------
 FEATURES = ["passer_x", "passer_y", "teammate_x", "teammate_y", "defender_x", "defender_y", "x_diff"]
 LABEL = "offside"
 MODEL_PATH = "saot_model.pkl"
 RANDOM_STATE = 42
 
-
-# ------------------------------------------------------------
-# Common interface for models (scalable)
-# ------------------------------------------------------------
 class OffsideDetector:
     """
     Wrapper over a sklearn Pipeline.
@@ -94,9 +78,6 @@ class OffsideDetector:
         print(f"  [OK] Model loaded: {path}")
 
 
-# ------------------------------------------------------------
-# Display utilities
-# ------------------------------------------------------------
 def print_section(title: str):
     width = 60
     print("\n" + "=" * width)
@@ -131,11 +112,7 @@ def run_cross_validation(detector: OffsideDetector, X: pd.DataFrame, y: pd.Serie
     print(f"    Mean:    {scores.mean():.4f} +/- {scores.std():.4f}")
 
 
-# ------------------------------------------------------------
-# Individual tests (simulate real-time readings)
-# ------------------------------------------------------------
 REALTIME_TESTS = [
-    # (passer_pos, teammate_pos, defender_pos, description)
     ((70.0, 50.0), (72.0, 50.0), (65.0, 48.0), "Clear OFFSIDE - teammate 7m ahead of defender"),
     ((65.0, 30.0), (60.0, 30.0), (65.0, 35.0), "Onside - teammate 5m behind defender"),
     ((65.0, 50.0), (65.1, 50.0), (65.0, 50.0), "Borderline - 0.1m difference (OFFSIDE)"),
@@ -154,23 +131,19 @@ def run_realtime_tests(detector: OffsideDetector):
     for i, (ps, tm, df, desc) in enumerate(REALTIME_TESTS, 1):
         sample = generate_realtime_sample(ps, tm, df)
         X_test = pd.DataFrame(sample)[FEATURES]
-        pred = detector.predict(X_test)[0]
+        pred = int(detector.predict(X_test)[0])
         proba = detector.predict_probe(X_test)[0]
         conf = proba[pred] * 100
         label = "[OFFSIDE]" if pred == 1 else "[Onside] "
         print(f"  {i:>3}.  {desc:<48}  {label}  {conf:>5.1f}%")
 
 
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
 def main():
     print("\n" + "+" + "=" * 58 + "+")
     print("  SAOT - Semi-Automated Offside Technology v1.0")
     print("  Phase 1: Detection based on player coordinates")
     print("+" + "=" * 58 + "+")
 
-    # --- 1. Data Generation ---
     print_section("1. TRAINING DATA GENERATION")
     df = generate_offside_sample(n_samples=3000, seed=RANDOM_STATE)
     X = df[FEATURES]
@@ -186,7 +159,6 @@ def main():
     )
     print(f"\n  Split: {len(X_train)} train / {len(X_test)} test (80/20, stratified)")
 
-    # --- 2. Model Training ---
     print_section("2. MODEL TRAINING")
 
     models = {
@@ -201,7 +173,6 @@ def main():
         run_cross_validation(detector, X_train, y_train)
         trained[name] = detector
 
-    # --- 3. Evaluation on Test Set ---
     print_section("3. TEST SET EVALUATION")
 
     best_model = None
@@ -217,15 +188,12 @@ def main():
             best_auc = auc
             best_model = (name.strip(), detector)
 
-    # --- 4. Save Best Model ---
     print_section("4. MODEL SAVING")
     print(f"\n  Best model: {best_model[0]} (AUC={best_auc:.4f})")
     best_model[1].save(MODEL_PATH)
 
-    # --- 5. Real-time Tests ---
     run_realtime_tests(best_model[1])
 
-    # --- 6. Feature Importances (RF) ---
     rf_detector = trained["Random Forest      "]
     rf_clf = rf_detector.pipeline.named_steps["classifier"]
     print_section("6. FEATURE IMPORTANCES (Random Forest)")

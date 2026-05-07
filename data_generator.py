@@ -1,7 +1,4 @@
 """
-SAOT - Semi-Automated Offside Technology
-Module: Training Data Generator
-
 Coordinates: (x, y) where x = depth on field (0=own goal line, 100=opponent goal)
              y = width of field (0=left, 100=right)
 
@@ -20,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 
-def generate_offside_sample(n_samples: int = 2000, noise: float = 0.5, seed: int = 42):
+def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     """
     Generate synthetic data for offside detection with 3 players.
 
@@ -38,28 +35,49 @@ def generate_offside_sample(n_samples: int = 2000, noise: float = 0.5, seed: int
     """
     rng = np.random.default_rng(seed)
 
-    # Defender position: somewhere in opponent's half (40-85)
     defender_x = rng.uniform(40, 85, n_samples)
     defender_y = rng.uniform(5, 95, n_samples)
 
-    # Passer position: the forward who makes the pass
-    # Usually in advanced position but can be anywhere
     passer_x = rng.uniform(30, 100, n_samples)
     passer_y = rng.uniform(5, 95, n_samples)
 
-    # Teammate position: the player receiving the pass
-    # Can be anywhere on the field, with tendency towards offside positions
     teammate_x = rng.uniform(20, 100, n_samples)
     teammate_y = rng.uniform(5, 95, n_samples)
 
-    # Label real (without noise): offside if teammate is ahead of defender
     x_diff = teammate_x - defender_x
-    label_clean = (x_diff > 0).astype(int)
 
-    # Add realistic noise (borderline cases ~noise%)
-    flip_mask = rng.random(n_samples) < noise * 0.05  # ~2.5% flip rate
-    label = label_clean.copy()
-    label[flip_mask] = 1 - label[flip_mask]
+    label = (x_diff > 0).astype(int)
+
+    # Add more samples near the decision boundary (x_diff close to 0)
+    n_boundary = n_samples // 4
+    defender_x_b = rng.uniform(40, 85, n_boundary)
+    defender_y_b = rng.uniform(5, 95, n_boundary)
+    passer_x_b = rng.uniform(30, 100, n_boundary)
+    passer_y_b = rng.uniform(5, 95, n_boundary)
+    # Generate x_diff values very close to 0 (between -0.5 and +0.5)
+    x_diff_b = rng.uniform(-0.5, 0.5, n_boundary)
+    teammate_x_b = defender_x_b + x_diff_b
+    teammate_y_b = rng.uniform(5, 95, n_boundary)
+    label_b = (x_diff_b > 0).astype(int)
+
+    n_exact = n_samples // 8
+    defender_x_e = rng.uniform(40, 85, n_exact)
+    defender_y_e = rng.uniform(5, 95, n_exact)
+    passer_x_e = rng.uniform(30, 100, n_exact)
+    passer_y_e = rng.uniform(5, 95, n_exact)
+    x_diff_e = np.zeros(n_exact)  # Exactly 0
+    teammate_x_e = defender_x_e + x_diff_e
+    teammate_y_e = rng.uniform(5, 95, n_exact)
+    label_e = np.zeros(n_exact)  # All onside
+
+    defender_x = np.concatenate([defender_x, defender_x_b, defender_x_e])
+    defender_y = np.concatenate([defender_y, defender_y_b, defender_y_e])
+    passer_x = np.concatenate([passer_x, passer_x_b, passer_x_e])
+    passer_y = np.concatenate([passer_y, passer_y_b, passer_y_e])
+    teammate_x = np.concatenate([teammate_x, teammate_x_b, teammate_x_e])
+    teammate_y = np.concatenate([teammate_y, teammate_y_b, teammate_y_e])
+    x_diff = np.concatenate([x_diff, x_diff_b, x_diff_e])
+    label = np.concatenate([label, label_b, label_e])
 
     df = pd.DataFrame({
         "passer_x": passer_x,
@@ -76,17 +94,6 @@ def generate_offside_sample(n_samples: int = 2000, noise: float = 0.5, seed: int
 
 
 def generate_realtime_sample(passer_pos: tuple, teammate_pos: tuple, defender_pos: tuple) -> dict:
-    """
-    Create a sample from a real-time reading (e.g., future OpenCV integration).
-
-    Args:
-        passer_pos: (x, y) coordinates of the passer (forward)
-        teammate_pos: (x, y) coordinates of the teammate (co-player)
-        defender_pos: (x, y) coordinates of the last defender
-
-    Returns:
-        dict with features ready for prediction
-    """
     px, py = passer_pos
     tx, ty = teammate_pos
     dx, dy = defender_pos
