@@ -6,7 +6,6 @@ Future Scalability:
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
@@ -40,9 +39,7 @@ class OffsideDetector:
         self.is_trained = False
 
     def _build_pipeline(self, model_type: str) -> Pipeline:
-        if model_type == "logistic_regression":
-            clf = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)
-        elif model_type == "random_forest":
+        if model_type == "random_forest":
             clf = RandomForestClassifier(
                 n_estimators=100,
                 max_depth=6,
@@ -161,42 +158,27 @@ def main():
 
     print_section("2. MODEL TRAINING")
 
-    models = {
-        "Logistic Regression": OffsideDetector("logistic_regression"),
-        "Random Forest      ": OffsideDetector("random_forest"),
-    }
-
-    trained = {}
-    for name, detector in models.items():
-        print(f"\n  Training: {name.strip()}...")
-        detector.train(X_train, y_train)
-        run_cross_validation(detector, X_train, y_train)
-        trained[name] = detector
+    detector = OffsideDetector("random_forest")
+    print(f"\n  Training: Random Forest...")
+    detector.train(X_train, y_train)
+    run_cross_validation(detector, X_train, y_train)
 
     print_section("3. TEST SET EVALUATION")
 
-    best_model = None
-    best_auc = 0
+    y_pred = detector.predict(X_test)
+    y_probe = detector.predict_probe(X_test)
+    print_metrics("Random Forest", y_test, y_pred, y_probe)
 
-    for name, detector in trained.items():
-        y_pred = detector.predict(X_test)
-        y_probe = detector.predict_probe(X_test)
-        print_metrics(name.strip(), y_test, y_pred, y_probe)
-
-        auc = roc_auc_score(y_test, y_probe[:, 1])
-        if auc > best_auc:
-            best_auc = auc
-            best_model = (name.strip(), detector)
+    auc = roc_auc_score(y_test, y_probe[:, 1])
 
     print_section("4. MODEL SAVING")
-    print(f"\n  Best model: {best_model[0]} (AUC={best_auc:.4f})")
-    best_model[1].save(MODEL_PATH)
+    print(f"\n  Model: Random Forest (AUC={auc:.4f})")
+    detector.save(MODEL_PATH)
 
-    run_realtime_tests(best_model[1])
+    run_realtime_tests(detector)
 
-    rf_detector = trained["Random Forest      "]
-    rf_clf = rf_detector.pipeline.named_steps["classifier"]
-    print_section("6. FEATURE IMPORTANCES (Random Forest)")
+    rf_clf = detector.pipeline.named_steps["classifier"]
+    print_section("5. FEATURE IMPORTANCES (Random Forest)")
     importances = rf_clf.feature_importances_
     for feat, imp in sorted(zip(FEATURES, importances), key=lambda x: -x[1]):
         bar = "#" * int(imp * 50)

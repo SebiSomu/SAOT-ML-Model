@@ -93,7 +93,6 @@ def draw_football_field(canvas: np.ndarray, bridge: CoordinateBridge):
 
 
 def draw_player(canvas, px, py, color, label, role, is_dragging=False):
-    cv2.circle(canvas, (px + 3, py + 3), PLAYER_RADIUS, (0, 0, 0), -1)
     cv2.circle(canvas, (px, py), PLAYER_RADIUS, color, -1)
     border_color = (255, 255, 255) if is_dragging else (200, 200, 200)
     border_w = 3 if is_dragging else 1
@@ -104,7 +103,7 @@ def draw_player(canvas, px, py, color, label, role, is_dragging=False):
                 (255, 255, 255), 1, cv2.LINE_AA)
 
     tw, _ = cv2.getTextSize(role, font, 0.38, 1)[0], 0
-    cv2.putText(canvas, role, (px - tw[0] // 2, py + PLAYER_RADIUS + 14),
+    cv2.putText(canvas, role, (px - tw[0] // 2 - 2, py + PLAYER_RADIUS + 14),
                 font, 0.38, color, 1, cv2.LINE_AA)
 
 
