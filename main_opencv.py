@@ -20,8 +20,7 @@ def ensure_model(force_retrain: bool = False):
 
         from data_generator import generate_offside_sample
 
-        FEATURES = ["passer_x", "passer_y", "teammate_x", "teammate_y",
-                    "defender_x", "defender_y", "x_diff"]
+        FEATURES = ["teammate_x", "teammate_y", "defender_x", "defender_y", "x_diff"]
 
         df = generate_offside_sample(n_samples=3000, seed=42)
         X = df[FEATURES]

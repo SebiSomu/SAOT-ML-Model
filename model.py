@@ -21,7 +21,7 @@ import os
 
 from data_generator import generate_offside_sample, generate_realtime_sample
 
-FEATURES = ["passer_x", "passer_y", "teammate_x", "teammate_y", "defender_x", "defender_y", "x_diff"]
+FEATURES = ["teammate_x", "teammate_y", "defender_x", "defender_y", "x_diff"]
 LABEL = "offside"
 MODEL_PATH = "saot_model.pkl"
 RANDOM_STATE = 42
@@ -110,13 +110,13 @@ def run_cross_validation(detector: OffsideDetector, X: pd.DataFrame, y: pd.Serie
 
 
 REALTIME_TESTS = [
-    ((70.0, 50.0), (72.0, 50.0), (65.0, 48.0), "Clear OFFSIDE - teammate 7m ahead of defender"),
-    ((65.0, 30.0), (60.0, 30.0), (65.0, 35.0), "Onside - teammate 5m behind defender"),
-    ((65.0, 50.0), (65.1, 50.0), (65.0, 50.0), "Borderline - 0.1m difference (OFFSIDE)"),
-    ((65.0, 50.0), (64.9, 50.0), (65.0, 50.0), "Borderline - -0.1m difference (Onside)"),
-    ((75.0, 20.0), (80.0, 20.0), (55.0, 40.0), "Flagrant OFFSIDE - 25m ahead of defender"),
-    ((50.0, 60.0), (40.0, 60.0), (70.0, 55.0), "Comfortable Onside - own half"),
-    ((65.0, 50.0), (65.0, 50.0), (65.0, 50.0), "Perfectly aligned - Onside (tie goes to attacker)"),
+    ((72.0, 50.0), (65.0, 48.0), "Clear OFFSIDE - teammate 7m ahead of defender"),
+    ((60.0, 30.0), (65.0, 35.0), "Onside - teammate 5m behind defender"),
+    ((65.1, 50.0), (65.0, 50.0), "Borderline - 0.1m difference (OFFSIDE)"),
+    ((64.9, 50.0), (65.0, 50.0), "Borderline - -0.1m difference (Onside)"),
+    ((80.0, 20.0), (55.0, 40.0), "Flagrant OFFSIDE - 25m ahead of defender"),
+    ((40.0, 60.0), (70.0, 55.0), "Comfortable Onside - own half"),
+    ((65.0, 50.0), (65.0, 50.0), "Perfectly aligned - Onside (tie goes to attacker)"),
 ]
 
 
@@ -125,8 +125,8 @@ def run_realtime_tests(detector: OffsideDetector):
     print(f"  {'No':>3}  {'Description':<48}  {'Prediction':>10}  {'Conf%':>6}")
     print(f"  {'---'}  {'-'*48}  {'-'*10}  {'-'*6}")
 
-    for i, (ps, tm, df, desc) in enumerate(REALTIME_TESTS, 1):
-        sample = generate_realtime_sample(ps, tm, df)
+    for i, (tm, df, desc) in enumerate(REALTIME_TESTS, 1):
+        sample = generate_realtime_sample(tm, df)
         X_test = pd.DataFrame(sample)[FEATURES]
         pred = int(detector.predict(X_test)[0])
         probe = detector.predict_probe(X_test)[0]

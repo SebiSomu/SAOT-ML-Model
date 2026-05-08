@@ -108,7 +108,6 @@ def draw_player(canvas, px, py, color, label, role, is_dragging=False):
 
 
 def draw_offside_line(canvas, bridge, defender_fx, is_offside):
-    """Draw the vertical offside line at defender's x position."""
     lx0, ly0, lx1, ly1 = bridge.offside_line_pixels(defender_fx)
     color = C_OFFSIDE if is_offside else C_ONSIDE
     alpha = 0.55
@@ -184,12 +183,10 @@ def draw_verdict_panel(canvas, verdict: dict, positions: dict, bridge: Coordinat
 
     tm = positions["teammate"]
     df = positions["defender"]
-    pa = positions["passer"]
 
     players = [
         ("TM", tm, C_TEAMMATE),
         ("DEF", df, C_DEFENDER),
-        ("PS",  pa, C_PASSER),
     ]
     row_y = 26
     for tag, pos, pcol in players:
@@ -244,7 +241,6 @@ class SAOTApp:
 
     def _compute_verdict(self) -> dict:
         return self.judge.judge(
-            self.positions["passer"],
             self.positions["teammate"],
             self.positions["defender"],
         )
@@ -254,7 +250,7 @@ class SAOTApp:
 
     def _nearest_player(self, mx, my):
         best, best_dist = None, DRAG_THRESHOLD
-        for name in ["passer", "teammate", "defender"]:
+        for name in ["teammate", "defender"]:
             px, py = self._pixel_of(name)
             d = ((mx - px) ** 2 + (my - py) ** 2) ** 0.5
             if d < best_dist:
@@ -298,7 +294,7 @@ class SAOTApp:
                           self.positions["defender"][0],
                           self.verdict["is_offside"])
 
-        # Pass arrow
+        # Pass arrow (visual only, not used for prediction)
         draw_pass_arrow(canvas, ps_px, tm_px, self.verdict["is_offside"])
 
         # Players

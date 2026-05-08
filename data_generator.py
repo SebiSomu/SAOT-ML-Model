@@ -19,11 +19,9 @@ import pandas as pd
 
 def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     """
-    Generate synthetic data for offside detection with 3 players.
+    Generate synthetic data for offside detection with 2 players.
 
     Features returned (per sample):
-        - passer_x     : x position of the passer (forward)
-        - passer_y     : y position of the passer
         - teammate_x   : x position of the teammate (co-player)
         - teammate_y   : y position of the teammate
         - defender_x   : x position of the last defender
@@ -38,9 +36,6 @@ def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     defender_x = rng.uniform(40, 85, n_samples)
     defender_y = rng.uniform(5, 95, n_samples)
 
-    passer_x = rng.uniform(30, 100, n_samples)
-    passer_y = rng.uniform(5, 95, n_samples)
-
     teammate_x = rng.uniform(20, 100, n_samples)
     teammate_y = rng.uniform(5, 95, n_samples)
 
@@ -52,9 +47,7 @@ def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     n_boundary = n_samples // 4
     defender_x_b = rng.uniform(40, 85, n_boundary)
     defender_y_b = rng.uniform(5, 95, n_boundary)
-    passer_x_b = rng.uniform(30, 100, n_boundary)
-    passer_y_b = rng.uniform(5, 95, n_boundary)
-    # Generate x_diff values very close to 0 (between -0.5 and +0.5)
+
     x_diff_b = rng.uniform(-0.5, 0.5, n_boundary)
     teammate_x_b = defender_x_b + x_diff_b
     teammate_y_b = rng.uniform(5, 95, n_boundary)
@@ -63,8 +56,6 @@ def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     n_exact = n_samples // 8
     defender_x_e = rng.uniform(40, 85, n_exact)
     defender_y_e = rng.uniform(5, 95, n_exact)
-    passer_x_e = rng.uniform(30, 100, n_exact)
-    passer_y_e = rng.uniform(5, 95, n_exact)
     x_diff_e = np.zeros(n_exact)  # Exactly 0
     teammate_x_e = defender_x_e + x_diff_e
     teammate_y_e = rng.uniform(5, 95, n_exact)
@@ -72,16 +63,12 @@ def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
 
     defender_x = np.concatenate([defender_x, defender_x_b, defender_x_e])
     defender_y = np.concatenate([defender_y, defender_y_b, defender_y_e])
-    passer_x = np.concatenate([passer_x, passer_x_b, passer_x_e])
-    passer_y = np.concatenate([passer_y, passer_y_b, passer_y_e])
     teammate_x = np.concatenate([teammate_x, teammate_x_b, teammate_x_e])
     teammate_y = np.concatenate([teammate_y, teammate_y_b, teammate_y_e])
     x_diff = np.concatenate([x_diff, x_diff_b, x_diff_e])
     label = np.concatenate([label, label_b, label_e])
 
     df = pd.DataFrame({
-        "passer_x": passer_x,
-        "passer_y": passer_y,
         "teammate_x": teammate_x,
         "teammate_y": teammate_y,
         "defender_x": defender_x,
@@ -93,13 +80,10 @@ def generate_offside_sample(n_samples: int = 2000, seed: int = 42):
     return df
 
 
-def generate_realtime_sample(passer_pos: tuple, teammate_pos: tuple, defender_pos: tuple) -> dict:
-    px, py = passer_pos
+def generate_realtime_sample(teammate_pos: tuple, defender_pos: tuple) -> dict:
     tx, ty = teammate_pos
     dx, dy = defender_pos
     return {
-        "passer_x": [px],
-        "passer_y": [py],
         "teammate_x": [tx],
         "teammate_y": [ty],
         "defender_x": [dx],

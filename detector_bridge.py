@@ -1,18 +1,7 @@
 """
-SAOT Phase 2 - Detector Bridge
+SAOT - Detector Bridge
 Converts pixel coordinates <-> field coordinates (0-100 scale)
 and interfaces with the trained ML model.
-
-Future upgrade path:
-    Phase 3 - replace pixel positions (currently set by mouse drag)
-    with YOLOv8 detections from a real camera frame:
-
-    from ultralytics import YOLO
-    yolo = YOLO("yolov8n.pt")
-    results = yolo(frame)
-    for box in results[0].boxes:
-        pixel_pos = box.xywh[0][:2].tolist()
-        field_pos = bridge.pixel_to_field(pixel_pos)
 """
 
 import numpy as np
@@ -20,8 +9,7 @@ import pandas as pd
 import joblib
 import os
 
-FEATURES = ["passer_x", "passer_y", "teammate_x", "teammate_y",
-            "defender_x", "defender_y", "x_diff"]
+FEATURES = ["teammate_x", "teammate_y", "defender_x", "defender_y", "x_diff"]
 MODEL_PATH = "saot_model.pkl"
 
 
@@ -58,16 +46,12 @@ class MLOffsideJudge:
         self.pipeline = joblib.load(model_path)
         print(f"[OK] Model loaded from: {os.path.abspath(model_path)}")
 
-    def judge(self, passer_pos: tuple, teammate_pos: tuple,
-              defender_pos: tuple) -> dict:
-
-        px, py = passer_pos
+    def judge(self, teammate_pos: tuple, defender_pos: tuple) -> dict:
         tx, ty = teammate_pos
         dx, dy = defender_pos
         x_diff = tx - dx
 
         sample = {
-            "passer_x": [px], "passer_y": [py],
             "teammate_x": [tx], "teammate_y": [ty],
             "defender_x": [dx], "defender_y": [dy],
             "x_diff": [x_diff],
